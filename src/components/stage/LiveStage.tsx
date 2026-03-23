@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { Users, ChevronUp, Mic, MicOff, Camera, CameraOff, List } from 'lucide-react';
+import { Users, Mic, MicOff, Camera, CameraOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { Timer } from './Timer';
 import { TipBar } from './TipBar';
 import { VoteOut } from './VoteOut';
@@ -9,12 +12,11 @@ import { LiveChat } from './LiveChat';
 import { VideoPlayer } from './VideoPlayer';
 import { EmptyStage } from './EmptyStage';
 import { QueuePanel } from '@/components/queue/QueuePanel';
+import { PERFORMANCE_CATEGORIES, CATEGORY_COLORS } from '@/types';
 import type { Performance, GlobalState, QueueEntry, PerformanceCategory } from '@/types';
 import type { UseAgoraReturn } from '@/hooks/useAgora';
-import type { ChatMessage } from '@/types';
-import type { Tip } from '@/types';
+import type { ChatMessage, Tip } from '@/types';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { CATEGORY_COLORS } from '@/types';
 
 interface LiveStageProps {
   performance: Performance | null;
@@ -107,52 +109,68 @@ export function LiveStage({
       {/* VIDEO LAYER */}
       <VideoPlayer agora={agora} isHost={isHost} />
 
-      {/* TOP gradient overlay */}
-      <div className="absolute inset-x-0 top-0 h-40 pointer-events-none" style={{ background: 'var(--gradient-top)' }} />
-      {/* BOTTOM gradient overlay */}
-      <div className="absolute inset-x-0 bottom-0 h-64 pointer-events-none" style={{ background: 'var(--gradient-bottom)' }} />
+      {/* TOP gradient */}
+      <div
+        className="absolute inset-x-0 top-0 h-36 pointer-events-none"
+        style={{ background: 'linear-gradient(to bottom, rgba(11,11,20,0.88) 0%, transparent 100%)' }}
+      />
+      {/* BOTTOM gradient */}
+      <div
+        className="absolute inset-x-0 bottom-0 h-72 pointer-events-none"
+        style={{ background: 'linear-gradient(to top, rgba(11,11,20,0.97) 0%, rgba(11,11,20,0.6) 50%, transparent 100%)' }}
+      />
 
-      {/* TOP HUD */}
+      {/* ── TOP HUD ── */}
       <div className="absolute top-0 inset-x-0 safe-top px-4 pt-4 flex items-start justify-between z-20">
-        {/* Left: LIVE badge + viewers + category */}
-        <div className="flex flex-col gap-1.5">
+        {/* Left: LIVE + viewers + category */}
+        <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <Badge live />
-            <div className="flex items-center gap-1 glass-dark rounded-full px-2.5 py-1">
-              <Users size={11} className="text-white/50" />
-              <span className="text-white/70 text-xs font-semibold">{globalState?.activeViewers ?? 1}</span>
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+              style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)' }}
+            >
+              <Users size={12} className="text-white/60" />
+              <span className="text-white/80 text-xs font-bold">{globalState?.activeViewers ?? 1}</span>
             </div>
           </div>
           <Badge category={performance.category} />
         </div>
 
-        {/* Right: Timer + controls */}
+        {/* Right: Timer + host controls */}
         <div className="flex flex-col items-end gap-2">
           <Timer timeLeft={timeLeft} totalTime={performance.duration} />
-
-          {/* Host controls */}
           {isHost && (
             <div className="flex gap-2">
               <button
                 onClick={agora.toggleMute}
-                className="w-8 h-8 rounded-full glass flex items-center justify-center transition-all active:scale-90"
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
+                style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)' }}
               >
-                {agora.isMuted ? <MicOff size={14} className="text-[#FF3B3B]" /> : <Mic size={14} className="text-white/70" />}
+                {agora.isMuted
+                  ? <MicOff size={15} className="text-[#FF3B3B]" />
+                  : <Mic size={15} className="text-white/80" />}
               </button>
               <button
                 onClick={agora.toggleCamera}
-                className="w-8 h-8 rounded-full glass flex items-center justify-center transition-all active:scale-90"
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
+                style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)' }}
               >
-                {agora.isCameraOff ? <CameraOff size={14} className="text-[#FF3B3B]" /> : <Camera size={14} className="text-white/70" />}
+                {agora.isCameraOff
+                  ? <CameraOff size={15} className="text-[#FF3B3B]" />
+                  : <Camera size={15} className="text-white/80" />}
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* RIGHT ACTION RAIL */}
-      <div className="absolute right-3 bottom-36 flex flex-col items-center gap-4 z-20">
+      {/* ── RIGHT ACTION RAIL — TikTok style ── */}
+      <div className="absolute right-3 bottom-32 flex flex-col items-center gap-5 z-20">
+        {/* Applause / Tip bar */}
         <TipBar onSendTip={onSendTip} disabled={isHost || !user} />
+
+        {/* Vote-out */}
         {!isHost && user && (
           <VoteOut
             voteCount={voteCount}
@@ -161,21 +179,39 @@ export function LiveStage({
             onVote={onVoteOut}
           />
         )}
+
+        {/* Queue button */}
         <button
           onClick={() => setQueueOpen(true)}
-          className="flex flex-col items-center gap-1"
+          className="flex flex-col items-center gap-1.5 group"
         >
-          <div className="w-12 h-12 rounded-full glass flex items-center justify-center hover:bg-white/10 transition-colors">
-            <List size={18} className="text-white/70" />
-          </div>
-          <span className="text-white/40 text-[10px]">{queue.length}</span>
+          <motion.div
+            whileTap={{ scale: 0.88 }}
+            className="w-12 h-12 rounded-full flex items-center justify-center transition-colors group-hover:bg-white/10"
+            style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)' }}
+          >
+            {/* Queue list icon */}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80">
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+          </motion.div>
+          {queue.length > 0 && (
+            <span className="text-white/50 text-[11px] font-semibold">{queue.length}</span>
+          )}
+          <span className="text-white/40 text-[10px]">Queue</span>
         </button>
       </div>
 
-      {/* BOTTOM: Performer info + Chat */}
-      <div className="absolute bottom-0 inset-x-0 safe-bottom px-4 pb-5 z-20 flex items-end gap-4">
-        {/* Left: Chat + performer info */}
+      {/* ── BOTTOM: Performer info + Chat ── */}
+      <div className="absolute bottom-0 inset-x-0 px-4 pb-4 z-20 flex items-end gap-3">
+        {/* Chat + performer */}
         <div className="flex-1 min-w-0 flex flex-col gap-3">
+          {/* Live chat */}
           <LiveChat
             messages={chatMessages}
             input={chatInput}
@@ -184,31 +220,37 @@ export function LiveStage({
             performerUid={performance.performerUid}
             isLoggedIn={!!user}
           />
-          {/* Performer info */}
+
+          {/* Performer info row */}
           <button
             onClick={() => onViewProfile(performance.performerUid)}
             className="flex items-center gap-3 group"
           >
-            <Avatar
-              src={performance.performerPhoto}
-              username={performance.performerName}
-              size="md"
-              ring
-            />
+            <div className="relative shrink-0">
+              <Avatar
+                src={performance.performerPhoto}
+                username={performance.performerName}
+                size="md"
+                ring
+              />
+            </div>
             <div className="min-w-0">
-              <p className="font-bold text-sm leading-tight truncate group-hover:text-purple transition-colors">
+              <p className="font-bold text-base leading-tight truncate group-hover:opacity-80 transition-opacity">
                 {performance.performerName}
               </p>
-              {tips.length > 0 && (
-                <p className="text-[#00FFB2] text-xs font-semibold">
-                  ${performance.totalEarnings.toFixed(2)} earned
-                </p>
-              )}
+              <div className="flex items-center gap-2 mt-0.5">
+                <Badge category={performance.category} />
+                {performance.totalEarnings > 0 && (
+                  <span className="text-[#00FFB2] text-xs font-bold">
+                    ${performance.totalEarnings.toFixed(2)}
+                  </span>
+                )}
+              </div>
             </div>
           </button>
         </div>
 
-        {/* Right: spacer for action rail */}
+        {/* Spacer for action rail */}
         <div className="w-14 shrink-0" />
       </div>
 
@@ -241,12 +283,6 @@ export function LiveStage({
   );
 }
 
-// Inline category selector modal (used in two places)
-import { PERFORMANCE_CATEGORIES } from '@/types';
-import { Modal } from '@/components/ui/Modal';
-import { Button } from '@/components/ui/Button';
-import { CATEGORY_COLORS as CC } from '@/types';
-
 function CategorySelectModal({
   selected,
   onSelect,
@@ -258,29 +294,31 @@ function CategorySelectModal({
   onConfirm: () => Promise<void>;
   onClose: () => void;
 }) {
+  const COLORS = CATEGORY_COLORS;
   return (
     <Modal open title="Choose Your Performance" onClose={onClose}>
       <div className="grid grid-cols-2 gap-2 mb-6">
         {PERFORMANCE_CATEGORIES.map(cat => {
-          const color = CC[cat] ?? '#7A5CFF';
+          const color = COLORS[cat] ?? '#7A5CFF';
           const isSelected = selected === cat;
           return (
-            <button
+            <motion.button
               key={cat}
+              whileTap={{ scale: 0.95 }}
               onClick={() => onSelect(cat)}
-              className="px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-all"
+              className="px-3 py-3 rounded-2xl text-sm font-semibold text-left transition-all"
               style={{
-                background: isSelected ? `${color}25` : 'rgba(255,255,255,0.05)',
-                border: `1px solid ${isSelected ? color : 'rgba(255,255,255,0.08)'}`,
-                color: isSelected ? color : 'rgba(255,255,255,0.7)',
+                background: isSelected ? `${color}22` : 'rgba(255,255,255,0.04)',
+                border: `1.5px solid ${isSelected ? color : 'rgba(255,255,255,0.07)'}`,
+                color: isSelected ? color : 'rgba(255,255,255,0.65)',
               }}
             >
               {cat}
-            </button>
+            </motion.button>
           );
         })}
       </div>
-      <Button variant="gradient" size="lg" className="w-full font-black" onClick={onConfirm}>
+      <Button variant="gradient" size="lg" className="w-full font-black text-base" onClick={onConfirm}>
         Take the Stage
       </Button>
     </Modal>

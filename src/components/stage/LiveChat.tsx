@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send } from 'lucide-react';
-import { Avatar } from '@/components/ui/Avatar';
 import type { ChatMessage } from '@/types';
 
 interface LiveChatProps {
@@ -11,7 +10,6 @@ interface LiveChatProps {
   onSend: () => void;
   performerUid?: string;
   isLoggedIn: boolean;
-  onLoginRequest?: () => void;
 }
 
 export function LiveChat({
@@ -36,34 +34,39 @@ export function LiveChat({
   };
 
   return (
-    <div className="flex flex-col" style={{ maxWidth: '65%' }}>
-      {/* Message list */}
-      <div className="flex flex-col gap-1.5 overflow-hidden max-h-52 mb-3">
+    <div className="flex flex-col" style={{ maxWidth: '70%' }}>
+      {/* Messages — TikTok style: just name + text, float up */}
+      <div className="flex flex-col gap-1.5 overflow-hidden max-h-44 mb-2.5">
         <AnimatePresence initial={false}>
-          {messages.slice(-12).map(msg => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="flex items-start gap-2"
-            >
-              <Avatar src={msg.senderPhoto} username={msg.senderName} size="xs" className="shrink-0 mt-0.5" />
-              <div
-                className="px-3 py-1.5 rounded-2xl rounded-tl-sm text-sm leading-snug glass-dark"
-                style={{ maxWidth: '100%' }}
+          {messages.slice(-10).map(msg => {
+            const isPerformer = msg.senderUid === performerUid;
+            return (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.18 }}
+                className="flex items-baseline gap-1.5 flex-wrap"
               >
                 <span
-                  className="font-bold text-xs mr-1"
-                  style={{ color: msg.senderUid === performerUid ? '#7A5CFF' : '#FF2D9A' }}
+                  className="text-xs font-black shrink-0 leading-snug"
+                  style={{ color: isPerformer ? '#7A5CFF' : '#FF2D9A' }}
                 >
                   {msg.senderName}
                 </span>
-                <span className="text-white/85 break-words">{msg.message}</span>
-              </div>
-            </motion.div>
-          ))}
+                <span
+                  className="text-sm leading-snug break-words"
+                  style={{
+                    color: 'rgba(255,255,255,0.9)',
+                    textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+                  }}
+                >
+                  {msg.message}
+                </span>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
         <div ref={bottomRef} />
       </div>
@@ -75,17 +78,23 @@ export function LiveChat({
             value={input}
             onChange={e => onInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Say something..."
+            placeholder="Add a comment…"
             maxLength={200}
-            className="flex-1 glass-dark rounded-full px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-white/20 min-w-0"
+            className="flex-1 rounded-full px-4 py-2.5 text-sm text-white placeholder-white/40 outline-none min-w-0"
+            style={{
+              background: 'rgba(0,0,0,0.45)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255,255,255,0.12)',
+            }}
           />
-          <button
+          <motion.button
+            whileTap={{ scale: 0.88 }}
             onClick={onSend}
             disabled={!input.trim()}
-            className="w-9 h-9 rounded-full gradient-bg flex items-center justify-center shrink-0 disabled:opacity-30 transition-opacity active:scale-90"
+            className="w-9 h-9 rounded-full gradient-bg flex items-center justify-center shrink-0 disabled:opacity-30 transition-opacity"
           >
             <Send size={14} className="text-white ml-0.5" />
-          </button>
+          </motion.button>
         </div>
       )}
     </div>

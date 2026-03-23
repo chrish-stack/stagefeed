@@ -10,7 +10,7 @@ import { useProfile } from '@/hooks/useProfile';
 
 import { LoginScreen } from '@/components/auth/LoginScreen';
 import { SwipeableShell } from '@/components/SwipeableShell';
-import { PanelDots } from '@/components/PanelDots';
+import { BottomNav } from '@/components/BottomNav';
 import { LiveStage } from '@/components/stage/LiveStage';
 import { Archive } from '@/components/archive/Archive';
 import { Profile } from '@/components/profile/Profile';
@@ -142,8 +142,13 @@ export default function App() {
     return <LoginScreen onLogin={handleLogin} loading={loginLoading} />;
   }
 
+  // Nav bar height used to offset panel content
+  const NAV_H = 76; // 60px bar + ~16px safe area buffer
+
   return (
-    <div className="fixed inset-0 bg-midnight overflow-hidden touch-none select-none">
+    <div className="fixed inset-0 bg-midnight overflow-hidden touch-none select-none flex flex-col">
+      {/* Panels fill remaining space above nav */}
+      <div className="flex-1 min-h-0" style={{ paddingBottom: NAV_H }}>
       <SwipeableShell activePanel={activePanel} onPanelChange={setActivePanel}>
         {/* PANEL 0: Archive */}
         <Archive
@@ -187,8 +192,9 @@ export default function App() {
           )}
         />
       </SwipeableShell>
+      </div>
 
-      <PanelDots
+      <BottomNav
         activePanel={activePanel}
         isLive={!!stage.currentPerformance}
         onNavigate={setActivePanel}

@@ -24,6 +24,7 @@
 
   /* Font */
   --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Inter Tight', 'Inter', system-ui, sans-serif;
 }
 
 /* Gradients (used via inline style or @apply workarounds) */
@@ -96,6 +97,10 @@ body {
 
   .glow-success {
     box-shadow: 0 0 20px rgba(0, 255, 178, 0.4);
+  }
+
+  .font-display {
+    font-family: 'Inter Tight', 'Inter', system-ui, sans-serif;
   }
 
   .gradient-ring {
