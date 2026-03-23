@@ -47,11 +47,10 @@ export function LoginScreen({ onLogin, loading }: LoginScreenProps) {
           transition={{ delay: 0.1, type: 'spring', stiffness: 280, damping: 20 }}
         >
           <img
-            src="/logo.png"
+            src="/icon.png"
             alt="StageFeed"
             className="w-20 h-20 rounded-3xl object-contain"
             onError={e => {
-              // Fallback to gradient box if logo not found
               (e.target as HTMLImageElement).style.display = 'none';
             }}
           />
