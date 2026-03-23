@@ -182,6 +182,9 @@ export default function App() {
           onSignOut={handleSignOut}
           currentUserPrivateData={viewingUid ? null : privateData}
           onUpdatePrivate={viewingUid ? undefined : handleUpdatePrivate}
+          userPerformances={stage.archivePerformances.filter(
+            p => p.performerUid === (targetUid ?? user.uid)
+          )}
         />
       </SwipeableShell>
 
