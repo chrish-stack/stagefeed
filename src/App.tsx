@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, type User as FirebaseUser } from 'firebase/auth';
+import { onAuthStateChanged, signInWithRedirect, getRedirectResult, GoogleAuthProvider, type User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { auth, db } from '@/lib/firebase';
@@ -34,6 +34,13 @@ export default function App() {
   // Profile hook for the backstage panel
   const targetUid = viewingUid ?? user?.uid ?? null;
   const backstageProfile = useProfile(targetUid, user);
+
+  // Consume redirect result on first load (signInWithRedirect flow)
+  useEffect(() => {
+    getRedirectResult(auth).catch(() => {
+      // Redirect result errors are surfaced via onAuthStateChanged; ignore here
+    });
+  }, []);
 
   // Auth init
   useEffect(() => {
@@ -103,12 +110,15 @@ export default function App() {
   const handleLogin = async () => {
     setLoginLoading(true);
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
+      // signInWithRedirect avoids COOP/popup issues in dev and on mobile
+      await signInWithRedirect(auth, new GoogleAuthProvider());
+      // Page will redirect — loading state persists until Google returns
     } catch (e) {
       console.error('Login failed', e);
-    } finally {
       setLoginLoading(false);
     }
+    // Don't reset loading — the redirect navigates away; on return,
+    // onAuthStateChanged fires and the app mounts with the signed-in user
   };
 
   const handleSignOut = () => auth.signOut();
